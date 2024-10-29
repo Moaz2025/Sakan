@@ -21,10 +21,13 @@ public class Property {
     private Integer id;
 
     @ManyToOne
-    @JoinColumn(name = "userId")
+    @JoinColumn(name = "user_id")
     private User user;
 
     private String title;
+
+    @Column(length = 150)
+    private String description;
 
     @Enumerated(EnumType.STRING)
     private SaleStatus saleStatus;
