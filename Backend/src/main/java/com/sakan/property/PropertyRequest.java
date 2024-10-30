@@ -3,6 +3,7 @@ package com.sakan.property;
 import lombok.Data;
 
 import java.util.Date;
+import java.util.List;
 
 @Data
 public class PropertyRequest {
@@ -19,4 +20,10 @@ public class PropertyRequest {
     private AvailabilityStatus availabilityStatus;
     private int buildingYear;
     private Date listingDate;
+    private String streetAddress;
+    private String city;
+    private String state;
+    private String country;
+    private String postalCode;
+    private List<String> imagesUrls;
 }

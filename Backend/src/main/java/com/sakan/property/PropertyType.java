@@ -1,14 +1,15 @@
 package com.sakan.property;
 
 public enum PropertyType {
-    APARTMENT,
-    VILLA,
     OFFICE,
-    TWINHOUSE,
+    STUDIO,
+    CHALET,
+    APARTMENT,
     DUPLEX,
     PENTHOUSE,
+    TWIN_HOUSE,
+    VILLA,
     PALACE,
-    LAND,
-    CHALET,
-    BUILDING
+    BUILDING,
+    LAND
 }
