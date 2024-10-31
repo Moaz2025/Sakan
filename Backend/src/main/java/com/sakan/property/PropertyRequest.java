@@ -7,17 +7,16 @@ import java.util.List;
 
 @Data
 public class PropertyRequest {
-    private int userId;
     private String title;
     private String description;
-    private SaleStatus saleStatus;
+    private String saleStatus;
     private int price;
-    private PropertyType propertyType;
+    private String propertyType;
     private float size;
     private int numberOfRooms;
     private int numberOfBathrooms;
     private int floorNumber;
-    private AvailabilityStatus availabilityStatus;
+    private String availabilityStatus;
     private int buildingYear;
     private Date listingDate;
     private String streetAddress;

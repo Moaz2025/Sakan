@@ -26,7 +26,7 @@ public class Property {
 
     private String title;
 
-    @Column(length = 150)
+    @Column(length = 500)
     private String description;
 
     @Enumerated(EnumType.STRING)

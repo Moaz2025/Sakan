@@ -10,6 +10,8 @@ public enum PropertyType {
     TWIN_HOUSE,
     VILLA,
     PALACE,
+    SHOP,
+    GARAGE,
     BUILDING,
     LAND
 }
