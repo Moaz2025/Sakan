@@ -1,6 +1,9 @@
 package com.sakan.property;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -32,5 +35,10 @@ public class PropertyService {
 
     public List<Property> getAllProperties() {
         return propertyRepository.findAll();
+    }
+
+    public Page<Property> getProperties(int pageNo, int pageSize) {
+        Pageable pageable = PageRequest.of(pageNo, pageSize);
+        return propertyRepository.findAll(pageable);
     }
 }

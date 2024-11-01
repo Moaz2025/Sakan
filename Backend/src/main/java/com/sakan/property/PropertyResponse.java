@@ -1,11 +1,19 @@
 package com.sakan.property;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
+import java.util.Date;
 import java.util.List;
 
 @Data
-public class PropertyRequest {
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class PropertyResponse {
+    private String message;
     private String title;
     private String description;
     private String saleStatus;
@@ -17,6 +25,7 @@ public class PropertyRequest {
     private int floorNumber;
     private String availabilityStatus;
     private int buildingYear;
+    private Date listingDate;
     private String streetAddress;
     private String city;
     private String state;
