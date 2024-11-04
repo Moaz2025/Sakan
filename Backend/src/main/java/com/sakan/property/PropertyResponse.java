@@ -14,6 +14,7 @@ import java.util.List;
 @NoArgsConstructor
 public class PropertyResponse {
     private String message;
+    private int id;
     private String title;
     private String description;
     private String saleStatus;

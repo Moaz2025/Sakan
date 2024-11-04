@@ -18,6 +18,10 @@ public class ImageService {
         return imageRepository.save(image);
     }
 
+    public void deleteImage(Image image) {
+        imageRepository.delete(image);
+    }
+
     public List<Image> getAllPropertyImages(int propertyId) {
         return imageRepository.findByPropertyId(propertyId);
     }
