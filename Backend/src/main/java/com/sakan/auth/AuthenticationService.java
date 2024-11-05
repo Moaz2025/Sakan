@@ -4,6 +4,8 @@ import com.sakan.config.JwtService;
 import com.sakan.user.Role;
 import com.sakan.user.User;
 import com.sakan.user.UserRepository;
+import com.sakan.validation.EmailValidator;
+import com.sakan.validation.PasswordValidator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -18,8 +20,19 @@ public class AuthenticationService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
+    private final EmailValidator emailValidator;
+    private final PasswordValidator passwordValidator;
 
     public AuthenticationResponse signUp(SignUpRequest signUpRequest) {
+        if (!emailValidator.isValid(signUpRequest.getEmail()))
+            throw new IllegalArgumentException("Invalid Email");
+
+        if (!passwordValidator.isValid(signUpRequest.getPassword()))
+            throw new IllegalArgumentException("Invalid Password");
+
+        if (userRepository.findByEmail(signUpRequest.getEmail()).isPresent())
+            throw new IllegalArgumentException("User Already Exists");
+
         var user = User.builder()
                 .firstName(signUpRequest.getFirstName())
                 .lastName(signUpRequest.getLastName())
