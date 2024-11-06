@@ -31,11 +31,11 @@ public class AuthenticationService {
         if (!emailValidator.isValid(signUpRequest.getEmail()))
             throw new IllegalArgumentException("Invalid Email");
 
-        if (!passwordValidator.isValid(signUpRequest.getPassword()))
-            throw new IllegalArgumentException("Invalid Password");
-
         if (userRepository.findByEmail(signUpRequest.getEmail()).isPresent())
             throw new IllegalArgumentException("User Already Exists");
+
+        if (!passwordValidator.isValid(signUpRequest.getPassword()))
+            throw new IllegalArgumentException("Invalid Password");
 
         var user = User.builder()
                 .firstName(signUpRequest.getFirstName())
