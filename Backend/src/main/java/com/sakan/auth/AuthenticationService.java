@@ -1,6 +1,9 @@
 package com.sakan.auth;
 
 import com.sakan.config.JwtService;
+import com.sakan.token.Token;
+import com.sakan.token.TokenRepository;
+import com.sakan.token.TokenType;
 import com.sakan.user.Role;
 import com.sakan.user.User;
 import com.sakan.user.UserRepository;
@@ -17,6 +20,7 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class AuthenticationService {
     private final UserRepository userRepository;
+    private final TokenRepository tokenRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
@@ -41,8 +45,9 @@ public class AuthenticationService {
                 .phoneNumber(signUpRequest.getPhoneNumber())
                 .role(Role.USER)
                 .build();
-        userRepository.save(user);
+        var savedUser = userRepository.save(user);
         var jwtToken = jwtService.generateToken(user);
+        saveUserToken(savedUser, jwtToken);
         return AuthenticationResponse.builder()
                 .token(jwtToken)
                 .build();
@@ -55,11 +60,39 @@ public class AuthenticationService {
                         signInRequest.getPassword()
                 )
         );
+
         var user = userRepository.findByEmail(signInRequest.getEmail())
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
         var jwtToken = jwtService.generateToken(user);
+
+        revokeAllUserTokens(user);
+        saveUserToken(user, jwtToken);
+
         return AuthenticationResponse.builder()
                 .token(jwtToken)
                 .build();
+    }
+
+    private void revokeAllUserTokens(User user) {
+        var validUserTokens = tokenRepository.findAllValidTokensByUser(user.getId());
+
+        if (!validUserTokens.isEmpty()) {
+            validUserTokens.forEach(token -> {
+                token.setExpired(true);
+                token.setRevoked(true);
+            });
+            tokenRepository.saveAll(validUserTokens);
+        }
+    }
+
+    private void saveUserToken(User user, String jwtToken) {
+        var token = Token.builder()
+                .user(user)
+                .token(jwtToken)
+                .tokenType(TokenType.BEARER)
+                .expired(false)
+                .revoked(false)
+                .build();
+        tokenRepository.save(token);
     }
 }
