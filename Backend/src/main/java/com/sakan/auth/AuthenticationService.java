@@ -12,7 +12,6 @@ import com.sakan.validation.PasswordValidator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -54,15 +53,20 @@ public class AuthenticationService {
     }
 
     public AuthenticationResponse signIn(SignInRequest signInRequest) {
-        authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        signInRequest.getEmail(),
-                        signInRequest.getPassword()
-                )
-        );
-
         var user = userRepository.findByEmail(signInRequest.getEmail())
-                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        try {
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(
+                            signInRequest.getEmail(),
+                            signInRequest.getPassword()
+                    )
+            );
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Incorrect password");
+        }
+
         var jwtToken = jwtService.generateToken(user);
 
         revokeAllUserTokens(user);
