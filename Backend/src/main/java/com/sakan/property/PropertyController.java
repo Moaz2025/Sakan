@@ -97,6 +97,7 @@ public class PropertyController {
                 .availabilityStatus(availabilityStatus)
                 .buildingYear(propertyRequest.getBuildingYear())
                 .listingDate(currentDate)
+                .views(0)
                 .build();
         propertyService.addProperty(property);
         var location = Location.builder()
@@ -146,6 +147,7 @@ public class PropertyController {
         PropertyType propertyType = PropertyType.valueOf(propertyRequest.getPropertyType().toUpperCase());
         AvailabilityStatus availabilityStatus = AvailabilityStatus.valueOf(propertyRequest.getAvailabilityStatus().toUpperCase());
         SaleStatus saleStatus = SaleStatus.valueOf(propertyRequest.getSaleStatus().toUpperCase());
+        Property dataProperty = propertyService.getPropertyById(propertyId);
         var property = Property.builder()
                 .user(user)
                 .id(propertyId)
@@ -160,6 +162,8 @@ public class PropertyController {
                 .floorNumber(propertyRequest.getFloorNumber())
                 .availabilityStatus(availabilityStatus)
                 .buildingYear(propertyRequest.getBuildingYear())
+                .listingDate(dataProperty.getListingDate())
+                .views(dataProperty.getViews())
                 .build();
         propertyService.editProperty(property);
         int locationId = locationService.getLocationByPropertyId(propertyId).getId();
@@ -227,6 +231,8 @@ public class PropertyController {
         List<String> imagesUrls = images.stream()
                 .map(Image::getImageUrl)
                 .toList();
+        property.setViews(property.getViews() + 1);
+        propertyService.editProperty(property);
         propertyResponse = PropertyResponse.builder()
                 .message("Property got successfully")
                 .id(property.getId())
@@ -242,6 +248,7 @@ public class PropertyController {
                 .availabilityStatus(property.getAvailabilityStatus().toString())
                 .buildingYear(property.getBuildingYear())
                 .listingDate(property.getListingDate())
+                .views(property.getViews())
                 .streetAddress(location.getStreetAddress())
                 .city(location.getCity())
                 .state(location.getState())
@@ -280,6 +287,7 @@ public class PropertyController {
                     .availabilityStatus(property.getAvailabilityStatus().toString())
                     .buildingYear(property.getBuildingYear())
                     .listingDate(property.getListingDate())
+                    .views(property.getViews())
                     .streetAddress(location.getStreetAddress())
                     .city(location.getCity())
                     .state(location.getState())
@@ -326,6 +334,7 @@ public class PropertyController {
                     .availabilityStatus(property.getAvailabilityStatus().toString())
                     .buildingYear(property.getBuildingYear())
                     .listingDate(property.getListingDate())
+                    .views(property.getViews())
                     .streetAddress(location.getStreetAddress())
                     .city(location.getCity())
                     .state(location.getState())

@@ -27,6 +27,7 @@ public class PropertyResponse {
     private String availabilityStatus;
     private int buildingYear;
     private Date listingDate;
+    private int views;
     private String streetAddress;
     private String city;
     private String state;
