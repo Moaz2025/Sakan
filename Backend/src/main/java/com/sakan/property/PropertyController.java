@@ -1,19 +1,23 @@
 package com.sakan.property;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sakan.config.JwtService;
 import com.sakan.user.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Objects;
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.IOException;
+import java.util.*;
 
 @RestController
 @RequestMapping("/property")
@@ -33,6 +37,9 @@ public class PropertyController {
 
     @Autowired
     private JwtService jwtService;
+
+    @Autowired
+    CloudinaryService cloudinaryService;
 
     public boolean isValidSaleStatus(String saleStatus) {
         try {
@@ -61,8 +68,40 @@ public class PropertyController {
         }
     }
 
+    public String getJsonValue(JsonNode json, String field) {
+        return json.has(field) ? json.get(field).asText() : null;
+    }
+
+    private int getJsonInteger(JsonNode json, String field) {
+        return json.has(field) ? json.get(field).asInt() : 0;
+    }
+
+    private float getJsonFloat(JsonNode json, String field) {
+        return json.has(field) ? json.get(field).floatValue() : 0;
+    }
+
     @PostMapping("/add")
-    public ResponseEntity<String> addNewProperty(@RequestHeader("Authorization") String token, @RequestBody PropertyRequest propertyRequest) {
+    public ResponseEntity<String> addNewProperty(@RequestHeader("Authorization") String token, @RequestParam String metadataJson, @RequestParam List<MultipartFile> multipartFiles) throws IOException {
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode metadata = mapper.readTree(metadataJson);
+        var propertyRequest = PropertyRequest.builder()
+                .title(getJsonValue(metadata, "title"))
+                .description(getJsonValue(metadata, "description"))
+                .saleStatus(getJsonValue(metadata, "saleStatus"))
+                .price(getJsonInteger(metadata, "price"))
+                .propertyType(getJsonValue(metadata, "propertyType"))
+                .size(getJsonFloat(metadata, "size"))
+                .numberOfRooms(getJsonInteger(metadata, "numberOfRooms"))
+                .numberOfBathrooms(getJsonInteger(metadata, "numberOfBathrooms"))
+                .floorNumber(getJsonInteger(metadata, "floorNumber"))
+                .availabilityStatus(getJsonValue(metadata, "availabilityStatus"))
+                .buildingYear(getJsonInteger(metadata, "buildingYear"))
+                .streetAddress(getJsonValue(metadata, "streetAddress"))
+                .city(getJsonValue(metadata, "city"))
+                .state(getJsonValue(metadata, "state"))
+                .country(getJsonValue(metadata, "country"))
+                .postalCode(getJsonValue(metadata, "postalCode"))
+                .build();
         token = token.replace("Bearer ", "");
         String email = jwtService.extractUsername(token);
         var user = userRepository.findByEmail(email)
@@ -109,11 +148,24 @@ public class PropertyController {
                 .postalCode(propertyRequest.getPostalCode())
                 .build();
         locationService.addLocation(location);
-        List<String> imagesUrls = propertyRequest.getImagesUrls();
-        for (String imageUrl : imagesUrls) {
+        List<String> imagesUrls = new ArrayList<>();
+        List<String> cloudIds = new ArrayList<>();
+        for (MultipartFile multipartFile : multipartFiles) {
+            BufferedImage bufferedImage = ImageIO.read(multipartFile.getInputStream());
+            if (bufferedImage == null) {
+                return new ResponseEntity<>("Image is not valid", HttpStatus.BAD_REQUEST);
+            }
+            Map result = cloudinaryService.upload(multipartFile);
+            String imageUrl = (String) result.get("url");
+            String cloudId = (String) result.get("public_id");
+            imagesUrls.add(imageUrl);
+            cloudIds.add(cloudId);
+        }
+        for (int i = 0; i < imagesUrls.size(); i++) {
             var image = Image.builder()
                     .property(property)
-                    .imageUrl(imageUrl)
+                    .imageUrl(imagesUrls.get(i))
+                    .cloudId(cloudIds.get(i))
                     .build();
             imageService.addImage(image);
         }
@@ -177,18 +229,6 @@ public class PropertyController {
                 .postalCode(propertyRequest.getPostalCode())
                 .build();
         locationService.editLocation(location);
-        List<Image> images = imageService.getAllPropertyImages(propertyId);
-        for (Image image : images) {
-            imageService.deleteImage(image);
-        }
-        List<String> imagesUrls = propertyRequest.getImagesUrls();
-        for (String imageUrl : imagesUrls) {
-            var image = Image.builder()
-                    .property(property)
-                    .imageUrl(imageUrl)
-                    .build();
-            imageService.addImage(image);
-        }
         return new ResponseEntity<>("Property edited successfully", HttpStatus.OK);
     }
 

@@ -22,4 +22,6 @@ public class Image {
     private Property property;
 
     private String imageUrl;
+
+    private String cloudId;
 }
