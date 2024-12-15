@@ -6,6 +6,7 @@ import java.util.Date;
 
 @Data
 public class FormResponse {
+    private String name;
     private String email;
     private String subject;
     private String message;

@@ -19,6 +19,7 @@ import java.util.Date;
     private Integer id;
 
     @Column
+    private String name;
     private String email;
     private String subject;
     private String message;

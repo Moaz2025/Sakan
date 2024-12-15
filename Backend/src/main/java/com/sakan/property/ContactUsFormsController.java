@@ -31,6 +31,7 @@ public class ContactUsFormsController {
     public ResponseEntity<String> addNewForm(@RequestBody FormRequest formRequest) {
         Date currentDate = new Date();
         var form = Form.builder()
+                .name(formRequest.getName())
                 .email(formRequest.getEmail())
                 .subject(formRequest.getSubject())
                 .message(formRequest.getMessage())
@@ -53,11 +54,11 @@ public class ContactUsFormsController {
         if (user == null) {
             return new ResponseEntity<>(HttpStatus.FORBIDDEN);
         }
-        Date currentDate = new Date();
         Page<Form> forms = contactUsFormsService.getForms(pageNo, pageSize);
         List<FormResponse> formResponsesList = new ArrayList<>();
         for (Form form : forms) {
             FormResponse formResponse = new FormResponse();
+            formResponse.setName(form.getName());
             formResponse.setEmail(form.getEmail());
             formResponse.setSubject(form.getSubject());
             formResponse.setMessage(form.getMessage());
