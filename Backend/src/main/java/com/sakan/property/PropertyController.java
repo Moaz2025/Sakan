@@ -3,10 +3,12 @@ package com.sakan.property;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sakan.config.JwtService;
+import com.sakan.user.User;
 import com.sakan.user.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -118,6 +120,15 @@ public class PropertyController {
         else if (!isValidAvailabilityStatus(propertyRequest.getAvailabilityStatus())) {
             return new ResponseEntity<>("Invalid availability status", HttpStatus.BAD_REQUEST);
         }
+        else if (multipartFiles.isEmpty() || multipartFiles.size() > 10) {
+            return new ResponseEntity<>("Number of images should be between 1 and 10", HttpStatus.BAD_REQUEST);
+        }
+        for (MultipartFile multipartFile : multipartFiles) {
+            BufferedImage bufferedImage = ImageIO.read(multipartFile.getInputStream());
+            if (bufferedImage == null) {
+                return new ResponseEntity<>("Image is not valid", HttpStatus.BAD_REQUEST);
+            }
+        }
         PropertyType propertyType = PropertyType.valueOf(propertyRequest.getPropertyType().toUpperCase());
         AvailabilityStatus availabilityStatus = AvailabilityStatus.valueOf(propertyRequest.getAvailabilityStatus().toUpperCase());
         SaleStatus saleStatus = SaleStatus.valueOf(propertyRequest.getSaleStatus().toUpperCase());
@@ -151,10 +162,6 @@ public class PropertyController {
         List<String> imagesUrls = new ArrayList<>();
         List<String> cloudIds = new ArrayList<>();
         for (MultipartFile multipartFile : multipartFiles) {
-            BufferedImage bufferedImage = ImageIO.read(multipartFile.getInputStream());
-            if (bufferedImage == null) {
-                return new ResponseEntity<>("Image is not valid", HttpStatus.BAD_REQUEST);
-            }
             Map result = cloudinaryService.upload(multipartFile);
             String imageUrl = (String) result.get("url");
             String cloudId = (String) result.get("public_id");
@@ -251,6 +258,12 @@ public class PropertyController {
         locationService.deleteLocation(location);
         List<Image> images = imageService.getAllPropertyImages(propertyId);
         for (Image image : images) {
+            String cloudinaryImageId = image.getCloudId();
+            try {
+                cloudinaryService.delete(cloudinaryImageId);
+            } catch (IOException e) {
+                return new ResponseEntity<>("Failed to delete image from Cloudinary", HttpStatus.INTERNAL_SERVER_ERROR);
+            }
             imageService.deleteImage(image);
         }
         Property property = propertyService.getPropertyById(propertyId);
@@ -300,10 +313,8 @@ public class PropertyController {
     }
 
     @GetMapping("/getAll")
-    public ResponseEntity<Page<PropertyResponse>> getAllProperties(
-            @RequestParam(defaultValue = "0") int pageNo,
-            @RequestParam(defaultValue = "10") int pageSize) {
-        Page<Property> properties = propertyService.getProperties(pageNo, pageSize);
+    public ResponseEntity<Page<PropertyResponse>> getAllProperties(Pageable pageable) {
+        Page<Property> properties = propertyService.getAllProperties(pageable);
         List<PropertyResponse> propertyResponsesList = new ArrayList<>();
         for (Property property : properties) {
             Location location = locationService.getLocationByPropertyId(property.getId());
@@ -385,5 +396,31 @@ public class PropertyController {
             propertyResponsesList.add(propertyResponse);
         }
         return ResponseEntity.ok(propertyResponsesList);
+    }
+
+    @GetMapping("/getPropertyOwner/{propertyId}")
+    public ResponseEntity<OwnerResponse> getPropertyOwner(@PathVariable int propertyId, @RequestHeader("Authorization") String token) {
+        OwnerResponse ownerResponse = new OwnerResponse();
+        token = token.replace("Bearer ", "");
+        String email = jwtService.extractUsername(token);
+        var user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+        if (user == null) {
+            ownerResponse.setMessage("Not a registered user");
+            return new ResponseEntity<>(ownerResponse, HttpStatus.FORBIDDEN);
+        }
+        else if (propertyService.getPropertyById(propertyId) == null) {
+            ownerResponse.setMessage("No property with this id");
+            return new ResponseEntity<>(ownerResponse, HttpStatus.NOT_FOUND);
+        }
+        User owner = propertyService.getPropertyById(propertyId).getUser();
+        ownerResponse = OwnerResponse.builder()
+                .message("Owner details got successfully")
+                .firstName(owner.getFirstName())
+                .lastName(owner.getLastName())
+                .email(owner.getEmail())
+                .phoneNumber(owner.getPhoneNumber())
+                .build();
+        return new ResponseEntity<>(ownerResponse, HttpStatus.OK);
     }
 }

@@ -5,9 +5,7 @@ import com.cloudinary.utils.ObjectUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.Map;
@@ -17,12 +15,28 @@ import java.util.Objects;
 public class CloudinaryService {
     Cloudinary cloudinary;
 
+    public Map<String, String> readKeysFromFile(String filePath) {
+        Map<String, String> secrets = new HashMap<>();
+        try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                line = line.trim();
+                if (line.contains(":")) {
+                    String[] parts = line.split(":", 2);
+                    String key = parts[0].trim();
+                    String value = parts[1].trim();
+                    secrets.put(key, value);
+                }
+            }
+        } catch (IOException e) {
+            System.err.println("Error reading file: " + e.getMessage());
+        }
+        return secrets;
+    }
+
     public CloudinaryService() {
-        Map<String, String> valuesMap = new HashMap<>();
-        valuesMap.put("cloud_name", "");
-        valuesMap.put("api_key", "");
-        valuesMap.put("api_secret", "");
-        cloudinary = new Cloudinary(valuesMap);
+        Map<String, String> secrets = readKeysFromFile("Backend\\src\\main\\java\\com\\sakan\\property\\keys.txt");
+        cloudinary = new Cloudinary(secrets);
     }
 
 

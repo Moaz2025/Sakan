@@ -48,6 +48,13 @@ public class ImageController {
         else if (!Objects.equals(propertyService.getPropertyById(propertyId).getUser().getEmail(), email)) {
             return new ResponseEntity<>("This property doesn't belong to this user", HttpStatus.FORBIDDEN);
         }
+        else if (imageService.getAllPropertyImages(propertyId).size() == 10) {
+            return new ResponseEntity<>("You can't add more images", HttpStatus.BAD_REQUEST);
+        }
+        else if ((imageService.getAllPropertyImages(propertyId).size() + multipartFiles.size()) > 10) {
+            int numOfImages = 10 - imageService.getAllPropertyImages(propertyId).size();
+            return new ResponseEntity<>("You can add " + String.valueOf(numOfImages) + " images only", HttpStatus.BAD_REQUEST);
+        }
         List<String> imagesUrls = new ArrayList<>();
         List<String> cloudIds = new ArrayList<>();
         for (MultipartFile multipartFile : multipartFiles) {
@@ -108,6 +115,6 @@ public class ImageController {
             return new ResponseEntity<>("Failed to delete image from Cloudinary", HttpStatus.INTERNAL_SERVER_ERROR);
         }
         imageService.deleteImage(image);
-        return new ResponseEntity<>("image deleted successfully", HttpStatus.OK);
+        return new ResponseEntity<>("Image deleted successfully", HttpStatus.OK);
     }
 }
