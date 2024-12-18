@@ -36,4 +36,8 @@ public class PropertyService {
     public Page<Property> getAllProperties(Pageable pageable) {
         return propertyRepository.findAll(pageable);
     }
+
+    public Page<Property> getAllPropertiesFilteredByPrice(int minPrice, int maxPrice, Pageable pageable) {
+        return propertyRepository.findByPriceBetween(minPrice, maxPrice, pageable);
+    }
 }

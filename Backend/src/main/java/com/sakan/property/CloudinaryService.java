@@ -35,10 +35,9 @@ public class CloudinaryService {
     }
 
     public CloudinaryService() {
-        Map<String, String> secrets = readKeysFromFile("Backend\\src\\main\\java\\com\\sakan\\property\\keys.txt");
+        Map<String, String> secrets = readKeysFromFile("C:\\Users\\Moaz\\Desktop\\Sakan\\Backend\\src\\main\\java\\com\\sakan\\property\\keys.txt");
         cloudinary = new Cloudinary(secrets);
     }
-
 
     public Map upload(MultipartFile multipartFile) throws IOException {
         File file = convert(multipartFile);
