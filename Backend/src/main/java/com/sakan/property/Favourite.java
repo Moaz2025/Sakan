@@ -1,5 +1,6 @@
 package com.sakan.property;
 
+import com.sakan.user.User;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -11,8 +12,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-@Table(name = "property_image")
-public class Image {
+@Table(name = "favourite")
+public class Favourite {
     @Id
     @GeneratedValue
     private Integer id;
@@ -21,7 +22,7 @@ public class Image {
     @JoinColumn(name = "propertyId")
     private Property property;
 
-    private String imageUrl;
-
-    private String cloudId;
+    @ManyToOne
+    @JoinColumn(name = "user_id")
+    private User user;
 }

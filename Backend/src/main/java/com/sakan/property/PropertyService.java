@@ -33,12 +33,11 @@ public class PropertyService {
         return propertyRepository.findByUserId(userId);
     }
 
-    public List<Property> getAllProperties() {
-        return propertyRepository.findAll();
+    public Page<Property> getAllProperties(Pageable pageable) {
+        return propertyRepository.findAll(pageable);
     }
 
-    public Page<Property> getProperties(int pageNo, int pageSize) {
-        Pageable pageable = PageRequest.of(pageNo, pageSize);
-        return propertyRepository.findAll(pageable);
+    public Page<Property> getAllPropertiesFilteredByPrice(int minPrice, int maxPrice, Pageable pageable) {
+        return propertyRepository.findByPriceBetween(minPrice, maxPrice, pageable);
     }
 }

@@ -1,19 +1,22 @@
 package com.sakan.property;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sakan.config.JwtService;
+import com.sakan.user.User;
 import com.sakan.user.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Objects;
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.IOException;
+import java.util.*;
 
 @RestController
 @RequestMapping("/property")
@@ -33,6 +36,9 @@ public class PropertyController {
 
     @Autowired
     private JwtService jwtService;
+
+    @Autowired
+    CloudinaryService cloudinaryService;
 
     public boolean isValidSaleStatus(String saleStatus) {
         try {
@@ -61,8 +67,40 @@ public class PropertyController {
         }
     }
 
+    public String getJsonValue(JsonNode json, String field) {
+        return json.has(field) ? json.get(field).asText() : null;
+    }
+
+    private int getJsonInteger(JsonNode json, String field) {
+        return json.has(field) ? json.get(field).asInt() : 0;
+    }
+
+    private float getJsonFloat(JsonNode json, String field) {
+        return json.has(field) ? json.get(field).floatValue() : 0;
+    }
+
     @PostMapping("/add")
-    public ResponseEntity<String> addNewProperty(@RequestHeader("Authorization") String token, @RequestBody PropertyRequest propertyRequest) {
+    public ResponseEntity<String> addNewProperty(@RequestHeader("Authorization") String token, @RequestParam String metadataJson, @RequestParam List<MultipartFile> multipartFiles) throws IOException {
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode metadata = mapper.readTree(metadataJson);
+        var propertyRequest = PropertyRequest.builder()
+                .title(getJsonValue(metadata, "title"))
+                .description(getJsonValue(metadata, "description"))
+                .saleStatus(getJsonValue(metadata, "saleStatus"))
+                .price(getJsonInteger(metadata, "price"))
+                .propertyType(getJsonValue(metadata, "propertyType"))
+                .size(getJsonFloat(metadata, "size"))
+                .numberOfRooms(getJsonInteger(metadata, "numberOfRooms"))
+                .numberOfBathrooms(getJsonInteger(metadata, "numberOfBathrooms"))
+                .floorNumber(getJsonInteger(metadata, "floorNumber"))
+                .availabilityStatus(getJsonValue(metadata, "availabilityStatus"))
+                .buildingYear(getJsonInteger(metadata, "buildingYear"))
+                .streetAddress(getJsonValue(metadata, "streetAddress"))
+                .city(getJsonValue(metadata, "city"))
+                .state(getJsonValue(metadata, "state"))
+                .country(getJsonValue(metadata, "country"))
+                .postalCode(getJsonValue(metadata, "postalCode"))
+                .build();
         token = token.replace("Bearer ", "");
         String email = jwtService.extractUsername(token);
         var user = userRepository.findByEmail(email)
@@ -78,6 +116,15 @@ public class PropertyController {
         }
         else if (!isValidAvailabilityStatus(propertyRequest.getAvailabilityStatus())) {
             return new ResponseEntity<>("Invalid availability status", HttpStatus.BAD_REQUEST);
+        }
+        else if (multipartFiles.isEmpty() || multipartFiles.size() > 10) {
+            return new ResponseEntity<>("Number of images should be between 1 and 10", HttpStatus.BAD_REQUEST);
+        }
+        for (MultipartFile multipartFile : multipartFiles) {
+            BufferedImage bufferedImage = ImageIO.read(multipartFile.getInputStream());
+            if (bufferedImage == null) {
+                return new ResponseEntity<>("Image is not valid", HttpStatus.BAD_REQUEST);
+            }
         }
         PropertyType propertyType = PropertyType.valueOf(propertyRequest.getPropertyType().toUpperCase());
         AvailabilityStatus availabilityStatus = AvailabilityStatus.valueOf(propertyRequest.getAvailabilityStatus().toUpperCase());
@@ -97,6 +144,7 @@ public class PropertyController {
                 .availabilityStatus(availabilityStatus)
                 .buildingYear(propertyRequest.getBuildingYear())
                 .listingDate(currentDate)
+                .views(0)
                 .build();
         propertyService.addProperty(property);
         var location = Location.builder()
@@ -108,11 +156,20 @@ public class PropertyController {
                 .postalCode(propertyRequest.getPostalCode())
                 .build();
         locationService.addLocation(location);
-        List<String> imagesUrls = propertyRequest.getImagesUrls();
-        for (String imageUrl : imagesUrls) {
+        List<String> imagesUrls = new ArrayList<>();
+        List<String> cloudIds = new ArrayList<>();
+        for (MultipartFile multipartFile : multipartFiles) {
+            Map result = cloudinaryService.upload(multipartFile);
+            String imageUrl = (String) result.get("url");
+            String cloudId = (String) result.get("public_id");
+            imagesUrls.add(imageUrl);
+            cloudIds.add(cloudId);
+        }
+        for (int i = 0; i < imagesUrls.size(); i++) {
             var image = Image.builder()
                     .property(property)
-                    .imageUrl(imageUrl)
+                    .imageUrl(imagesUrls.get(i))
+                    .cloudId(cloudIds.get(i))
                     .build();
             imageService.addImage(image);
         }
@@ -146,6 +203,7 @@ public class PropertyController {
         PropertyType propertyType = PropertyType.valueOf(propertyRequest.getPropertyType().toUpperCase());
         AvailabilityStatus availabilityStatus = AvailabilityStatus.valueOf(propertyRequest.getAvailabilityStatus().toUpperCase());
         SaleStatus saleStatus = SaleStatus.valueOf(propertyRequest.getSaleStatus().toUpperCase());
+        Property dataProperty = propertyService.getPropertyById(propertyId);
         var property = Property.builder()
                 .user(user)
                 .id(propertyId)
@@ -160,6 +218,8 @@ public class PropertyController {
                 .floorNumber(propertyRequest.getFloorNumber())
                 .availabilityStatus(availabilityStatus)
                 .buildingYear(propertyRequest.getBuildingYear())
+                .listingDate(dataProperty.getListingDate())
+                .views(dataProperty.getViews())
                 .build();
         propertyService.editProperty(property);
         int locationId = locationService.getLocationByPropertyId(propertyId).getId();
@@ -173,18 +233,6 @@ public class PropertyController {
                 .postalCode(propertyRequest.getPostalCode())
                 .build();
         locationService.editLocation(location);
-        List<Image> images = imageService.getAllPropertyImages(propertyId);
-        for (Image image : images) {
-            imageService.deleteImage(image);
-        }
-        List<String> imagesUrls = propertyRequest.getImagesUrls();
-        for (String imageUrl : imagesUrls) {
-            var image = Image.builder()
-                    .property(property)
-                    .imageUrl(imageUrl)
-                    .build();
-            imageService.addImage(image);
-        }
         return new ResponseEntity<>("Property edited successfully", HttpStatus.OK);
     }
 
@@ -207,6 +255,12 @@ public class PropertyController {
         locationService.deleteLocation(location);
         List<Image> images = imageService.getAllPropertyImages(propertyId);
         for (Image image : images) {
+            String cloudinaryImageId = image.getCloudId();
+            try {
+                cloudinaryService.delete(cloudinaryImageId);
+            } catch (IOException e) {
+                return new ResponseEntity<>("Failed to delete image from Cloudinary", HttpStatus.INTERNAL_SERVER_ERROR);
+            }
             imageService.deleteImage(image);
         }
         Property property = propertyService.getPropertyById(propertyId);
@@ -227,6 +281,8 @@ public class PropertyController {
         List<String> imagesUrls = images.stream()
                 .map(Image::getImageUrl)
                 .toList();
+        property.setViews(property.getViews() + 1);
+        propertyService.editProperty(property);
         propertyResponse = PropertyResponse.builder()
                 .message("Property got successfully")
                 .id(property.getId())
@@ -242,6 +298,7 @@ public class PropertyController {
                 .availabilityStatus(property.getAvailabilityStatus().toString())
                 .buildingYear(property.getBuildingYear())
                 .listingDate(property.getListingDate())
+                .views(property.getViews())
                 .streetAddress(location.getStreetAddress())
                 .city(location.getCity())
                 .state(location.getState())
@@ -253,10 +310,8 @@ public class PropertyController {
     }
 
     @GetMapping("/getAll")
-    public ResponseEntity<Page<PropertyResponse>> getAllProperties(
-            @RequestParam(defaultValue = "0") int pageNo,
-            @RequestParam(defaultValue = "10") int pageSize) {
-        Page<Property> properties = propertyService.getProperties(pageNo, pageSize);
+    public ResponseEntity<Page<PropertyResponse>> getAllProperties(Pageable pageable) {
+        Page<Property> properties = propertyService.getAllProperties(pageable);
         List<PropertyResponse> propertyResponsesList = new ArrayList<>();
         for (Property property : properties) {
             Location location = locationService.getLocationByPropertyId(property.getId());
@@ -280,6 +335,7 @@ public class PropertyController {
                     .availabilityStatus(property.getAvailabilityStatus().toString())
                     .buildingYear(property.getBuildingYear())
                     .listingDate(property.getListingDate())
+                    .views(property.getViews())
                     .streetAddress(location.getStreetAddress())
                     .city(location.getCity())
                     .state(location.getState())
@@ -326,6 +382,7 @@ public class PropertyController {
                     .availabilityStatus(property.getAvailabilityStatus().toString())
                     .buildingYear(property.getBuildingYear())
                     .listingDate(property.getListingDate())
+                    .views(property.getViews())
                     .streetAddress(location.getStreetAddress())
                     .city(location.getCity())
                     .state(location.getState())
@@ -336,5 +393,74 @@ public class PropertyController {
             propertyResponsesList.add(propertyResponse);
         }
         return ResponseEntity.ok(propertyResponsesList);
+    }
+
+    @GetMapping("/getPropertyOwner/{propertyId}")
+    public ResponseEntity<OwnerResponse> getPropertyOwner(@PathVariable int propertyId, @RequestHeader("Authorization") String token) {
+        OwnerResponse ownerResponse = new OwnerResponse();
+        token = token.replace("Bearer ", "");
+        String email = jwtService.extractUsername(token);
+        var user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+        if (user == null) {
+            ownerResponse.setMessage("Not a registered user");
+            return new ResponseEntity<>(ownerResponse, HttpStatus.FORBIDDEN);
+        }
+        else if (propertyService.getPropertyById(propertyId) == null) {
+            ownerResponse.setMessage("No property with this id");
+            return new ResponseEntity<>(ownerResponse, HttpStatus.NOT_FOUND);
+        }
+        User owner = propertyService.getPropertyById(propertyId).getUser();
+        ownerResponse = OwnerResponse.builder()
+                .message("Owner details got successfully")
+                .firstName(owner.getFirstName())
+                .lastName(owner.getLastName())
+                .email(owner.getEmail())
+                .phoneNumber(owner.getPhoneNumber())
+                .build();
+        return new ResponseEntity<>(ownerResponse, HttpStatus.OK);
+    }
+
+    @GetMapping("/getAllFilteredByPrice")
+    public ResponseEntity<Page<PropertyResponse>> getAllPropertiesFilteredByPrice(
+            Pageable pageable,
+            @RequestParam(name = "min_price", defaultValue = "0") int minPrice,
+            @RequestParam(name = "max_price", defaultValue = "100000000") int maxPrice) {
+        Page<Property> properties = propertyService.getAllPropertiesFilteredByPrice(minPrice, maxPrice, pageable);
+        List<PropertyResponse> propertyResponsesList = new ArrayList<>();
+        for (Property property : properties) {
+            Location location = locationService.getLocationByPropertyId(property.getId());
+            List<Image> images = imageService.getAllPropertyImages(property.getId());
+            List<String> imagesUrls = images.stream()
+                    .map(Image::getImageUrl)
+                    .toList();
+            PropertyResponse propertyResponse;
+            propertyResponse = PropertyResponse.builder()
+                    .message("Property got successfully")
+                    .id(property.getId())
+                    .title(property.getTitle())
+                    .description(property.getDescription())
+                    .saleStatus(property.getSaleStatus().toString())
+                    .price(property.getPrice())
+                    .propertyType(property.getPropertyType().toString())
+                    .size(property.getSize())
+                    .numberOfRooms(property.getNumberOfRooms())
+                    .numberOfBathrooms(property.getNumberOfBathrooms())
+                    .floorNumber(property.getFloorNumber())
+                    .availabilityStatus(property.getAvailabilityStatus().toString())
+                    .buildingYear(property.getBuildingYear())
+                    .listingDate(property.getListingDate())
+                    .views(property.getViews())
+                    .streetAddress(location.getStreetAddress())
+                    .city(location.getCity())
+                    .state(location.getState())
+                    .country(location.getCountry())
+                    .postalCode(location.getPostalCode())
+                    .imagesUrls(imagesUrls)
+                    .build();
+            propertyResponsesList.add(propertyResponse);
+        }
+        Page<PropertyResponse> propertyResponsePage = new PageImpl<>(propertyResponsesList, properties.getPageable(), properties.getTotalElements());
+        return ResponseEntity.ok(propertyResponsePage);
     }
 }
