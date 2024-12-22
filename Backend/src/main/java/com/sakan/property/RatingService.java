@@ -18,7 +18,7 @@ public class RatingService {
 
     public List<Rating> findByProperty(int propertyId){ return ratingRepository.findByPropertyId(propertyId); }
 
-    public List<Rating> findByPropertyAndUser(int propertyId, int userId){ return ratingRepository.findByPropertyIdAndUserId(propertyId, userId); }
+    public Rating findByPropertyAndUser(int propertyId, int userId){ return ratingRepository.findByPropertyIdAndUserId(propertyId, userId); }
 
     public List<Rating> getAllRatings(){ return ratingRepository.findAll(); }
 }

@@ -38,12 +38,15 @@ public class RatingController {
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
         if (user == null) {
             return new ResponseEntity<>("Not a registered user", HttpStatus.FORBIDDEN);
-        } else if (propertyService.getPropertyById(propertyId) == null) {
+        }
+        else if (propertyService.getPropertyById(propertyId) == null) {
             return new ResponseEntity<>("No property with this id", HttpStatus.NOT_FOUND);
-        } Property property = propertyService.getPropertyById(propertyId);
-        if(ratingService.findByPropertyAndUser(user.getId(), property.getId()) != null){
+        }
+        Property property = propertyService.getPropertyById(propertyId);
+        if(ratingService.findByPropertyAndUser(property.getId(), user.getId()) != null){
             return new ResponseEntity<>("User rated this property before", HttpStatus.BAD_REQUEST);
-        } if(rate<1 || rate>5){
+        }
+        if(rate < 1 || rate > 5){
             return new ResponseEntity<>("Not a valid rating", HttpStatus.BAD_REQUEST);
         }
         var rating = Rating.builder()
@@ -60,13 +63,19 @@ public class RatingController {
             return new ResponseEntity("No property with this id", HttpStatus.NOT_FOUND);
         }
         List<Rating> ratings = ratingService.findByProperty(propertyId);
+        if (ratings.isEmpty()) {
+            RatingResponse ratingResponse = new RatingResponse();
+            ratingResponse.setRate(0);
+            ratingResponse.setNumOfRates(0);
+            return new ResponseEntity<>(ratingResponse, HttpStatus.OK);
+        }
         int sum = 0;
         for(Rating rating : ratings){
             sum += rating.getRating();
         }
         int count = ratings.size();
         RatingResponse ratingResponse = new RatingResponse();
-        ratingResponse.setRate(sum / count);
+        ratingResponse.setRate((float) sum / count);
         ratingResponse.setNumOfRates(count);
         return new ResponseEntity<>(ratingResponse, HttpStatus.OK);
     }
