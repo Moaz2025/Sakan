@@ -51,4 +51,6 @@ public class Property {
     private int buildingYear;
 
     private Date listingDate;
+
+    private int views;
 }

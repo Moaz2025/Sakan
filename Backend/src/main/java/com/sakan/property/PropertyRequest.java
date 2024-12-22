@@ -1,10 +1,12 @@
 package com.sakan.property;
 
+import lombok.Builder;
 import lombok.Data;
 
 import java.util.List;
 
 @Data
+@Builder
 public class PropertyRequest {
     private String title;
     private String description;
@@ -22,5 +24,4 @@ public class PropertyRequest {
     private String state;
     private String country;
     private String postalCode;
-    private List<String> imagesUrls;
 }

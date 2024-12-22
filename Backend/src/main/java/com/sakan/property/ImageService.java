@@ -14,10 +14,6 @@ public class ImageService {
         return imageRepository.save(image);
     }
 
-    public Image editImage(Image image) {
-        return imageRepository.save(image);
-    }
-
     public void deleteImage(Image image) {
         imageRepository.delete(image);
     }
