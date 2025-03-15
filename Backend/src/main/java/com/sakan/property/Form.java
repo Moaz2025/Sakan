@@ -6,22 +6,22 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.Date;
+
 @Data
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-@Table(name = "property_image")
-public class Image {
+@Table(name = "forms")public class Form {
     @Id
     @GeneratedValue
     private Integer id;
 
-    @ManyToOne
-    @JoinColumn(name = "propertyId")
-    private Property property;
-
-    private String imageUrl;
-
-    private String cloudId;
+    @Column
+    private String name;
+    private String email;
+    private String subject;
+    private String message;
+    private Date date;
 }
