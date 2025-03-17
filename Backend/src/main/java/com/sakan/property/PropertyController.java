@@ -421,12 +421,100 @@ public class PropertyController {
         return new ResponseEntity<>(ownerResponse, HttpStatus.OK);
     }
 
-    @GetMapping("/getAllFilteredByPrice")
+    @GetMapping("/filterByPrice")
     public ResponseEntity<Page<PropertyResponse>> getAllPropertiesFilteredByPrice(
             Pageable pageable,
             @RequestParam(name = "min_price", defaultValue = "0") int minPrice,
             @RequestParam(name = "max_price", defaultValue = "100000000") int maxPrice) {
         Page<Property> properties = propertyService.getAllPropertiesFilteredByPrice(minPrice, maxPrice, pageable);
+        List<PropertyResponse> propertyResponsesList = new ArrayList<>();
+        for (Property property : properties) {
+            Location location = locationService.getLocationByPropertyId(property.getId());
+            List<Image> images = imageService.getAllPropertyImages(property.getId());
+            List<String> imagesUrls = images.stream()
+                    .map(Image::getImageUrl)
+                    .toList();
+            PropertyResponse propertyResponse;
+            propertyResponse = PropertyResponse.builder()
+                    .message("Property got successfully")
+                    .id(property.getId())
+                    .title(property.getTitle())
+                    .description(property.getDescription())
+                    .saleStatus(property.getSaleStatus().toString())
+                    .price(property.getPrice())
+                    .propertyType(property.getPropertyType().toString())
+                    .size(property.getSize())
+                    .numberOfRooms(property.getNumberOfRooms())
+                    .numberOfBathrooms(property.getNumberOfBathrooms())
+                    .floorNumber(property.getFloorNumber())
+                    .availabilityStatus(property.getAvailabilityStatus().toString())
+                    .buildingYear(property.getBuildingYear())
+                    .listingDate(property.getListingDate())
+                    .views(property.getViews())
+                    .streetAddress(location.getStreetAddress())
+                    .city(location.getCity())
+                    .state(location.getState())
+                    .country(location.getCountry())
+                    .postalCode(location.getPostalCode())
+                    .imagesUrls(imagesUrls)
+                    .build();
+            propertyResponsesList.add(propertyResponse);
+        }
+        Page<PropertyResponse> propertyResponsePage = new PageImpl<>(propertyResponsesList, properties.getPageable(), properties.getTotalElements());
+        return ResponseEntity.ok(propertyResponsePage);
+    }
+
+    @GetMapping("/filterByPropertyType")
+    public ResponseEntity<Page<PropertyResponse>> getAllPropertiesFilteredByPropertyType(
+            Pageable pageable,
+            @RequestParam(name = "property_type", defaultValue = "APARTMENT") String propertyTypeStr) {
+        if (!isValidPropertyType(propertyTypeStr)) {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+        PropertyType propertyType = PropertyType.valueOf(propertyTypeStr.toUpperCase());
+        Page<Property> properties = propertyService.getAllPropertiesFilteredByPropertyType(propertyType, pageable);
+        List<PropertyResponse> propertyResponsesList = new ArrayList<>();
+        for (Property property : properties) {
+            Location location = locationService.getLocationByPropertyId(property.getId());
+            List<Image> images = imageService.getAllPropertyImages(property.getId());
+            List<String> imagesUrls = images.stream()
+                    .map(Image::getImageUrl)
+                    .toList();
+            PropertyResponse propertyResponse;
+            propertyResponse = PropertyResponse.builder()
+                    .message("Property got successfully")
+                    .id(property.getId())
+                    .title(property.getTitle())
+                    .description(property.getDescription())
+                    .saleStatus(property.getSaleStatus().toString())
+                    .price(property.getPrice())
+                    .propertyType(property.getPropertyType().toString())
+                    .size(property.getSize())
+                    .numberOfRooms(property.getNumberOfRooms())
+                    .numberOfBathrooms(property.getNumberOfBathrooms())
+                    .floorNumber(property.getFloorNumber())
+                    .availabilityStatus(property.getAvailabilityStatus().toString())
+                    .buildingYear(property.getBuildingYear())
+                    .listingDate(property.getListingDate())
+                    .views(property.getViews())
+                    .streetAddress(location.getStreetAddress())
+                    .city(location.getCity())
+                    .state(location.getState())
+                    .country(location.getCountry())
+                    .postalCode(location.getPostalCode())
+                    .imagesUrls(imagesUrls)
+                    .build();
+            propertyResponsesList.add(propertyResponse);
+        }
+        Page<PropertyResponse> propertyResponsePage = new PageImpl<>(propertyResponsesList, properties.getPageable(), properties.getTotalElements());
+        return ResponseEntity.ok(propertyResponsePage);
+    }
+
+    @GetMapping("/filterByCity")
+    public ResponseEntity<Page<PropertyResponse>> getAllPropertiesFilteredByCity(
+            Pageable pageable,
+            @RequestParam(name = "city_prefix", defaultValue = "Alex") String cityPrefix) {
+        Page<Property> properties = propertyService.getAllPropertiesFilteredByCity(cityPrefix, pageable);
         List<PropertyResponse> propertyResponsesList = new ArrayList<>();
         for (Property property : properties) {
             Location location = locationService.getLocationByPropertyId(property.getId());
