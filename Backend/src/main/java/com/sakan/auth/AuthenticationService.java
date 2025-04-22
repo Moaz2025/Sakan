@@ -26,7 +26,7 @@ public class AuthenticationService {
     private final EmailValidator emailValidator;
     private final PasswordValidator passwordValidator;
 
-    public AuthenticationResponse signUp(SignUpRequest signUpRequest) {
+    public AuthenticationResponse signUp(SignUpRequest signUpRequest, Role role) {
         if (!emailValidator.isValid(signUpRequest.getEmail()))
             throw new IllegalArgumentException("Invalid Email");
 
@@ -42,7 +42,7 @@ public class AuthenticationService {
                 .email(signUpRequest.getEmail())
                 .password(passwordEncoder.encode(signUpRequest.getPassword()))
                 .phoneNumber(signUpRequest.getPhoneNumber())
-                .role(Role.USER)
+                .role(role)
                 .build();
         var savedUser = userRepository.save(user);
         var jwtToken = jwtService.generateToken(user);

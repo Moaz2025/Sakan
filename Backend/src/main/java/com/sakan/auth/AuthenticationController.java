@@ -1,5 +1,6 @@
 package com.sakan.auth;
 
+import com.sakan.user.Role;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -13,7 +14,7 @@ public class AuthenticationController {
 
     @PostMapping("/signUp")
     public ResponseEntity<AuthenticationResponse> signUp(@RequestBody SignUpRequest signUpRequest) {
-        return ResponseEntity.ok(authenticationService.signUp(signUpRequest));
+        return ResponseEntity.ok(authenticationService.signUp(signUpRequest, Role.USER));
     }
 
     @PostMapping("/signIn")
