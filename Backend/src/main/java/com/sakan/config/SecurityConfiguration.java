@@ -27,7 +27,7 @@ public class SecurityConfiguration {
                 .csrf()
                 .disable()
                 .authorizeHttpRequests()
-                .requestMatchers("/auth/**", "/property/get/**", "/property/getAll", "/contactUs/newForm", "/contactUs/getAll", "/rating/get/**", "/property/filterByPrice", "/property/filterByPropertyType", "/property/filterByCity")
+                .requestMatchers("/auth/**", "/property/get/**", "/property/getAll", "/contactUs/newForm", "/contactUs/getAll", "/rating/get/**", "/property/filterByPrice", "/property/filterByPropertyType", "/property/filterByCity", "/predict")
                 .permitAll()
                 .anyRequest()
                 .authenticated()
