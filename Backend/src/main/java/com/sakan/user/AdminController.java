@@ -25,4 +25,6 @@ public class AdminController {
         adminService.assignNewAdmin(request, principal);
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
+
+
 }

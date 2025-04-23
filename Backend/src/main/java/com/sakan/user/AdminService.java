@@ -22,6 +22,6 @@ public class AdminService {
             throw new IllegalArgumentException("You are not an admin");
         }
 
-        var newAdminToken = authenticationService.signUp(request, Role.ADMIN);
+        authenticationService.signUp(request, Role.ADMIN);
     }
 }

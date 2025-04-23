@@ -53,6 +53,21 @@ public class AuthenticationService {
     }
 
     public AuthenticationResponse signIn(SignInRequest signInRequest) {
+        var admin = userRepository.findByEmail("admin@sakan.com")
+                .orElse(null);
+
+        if (admin == null) {
+            User newAdmin = User
+                    .builder()
+                    .firstName("Sakan")
+                    .lastName("Admin")
+                    .email("admin@sakan.com")
+                    .password(passwordEncoder.encode("sakan#admin123"))
+                    .role(Role.ADMIN)
+                    .build();
+            userRepository.save(newAdmin);
+        }
+
         var user = userRepository.findByEmail(signInRequest.getEmail())
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
