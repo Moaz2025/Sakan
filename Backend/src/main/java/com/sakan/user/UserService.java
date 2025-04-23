@@ -1,5 +1,6 @@
 package com.sakan.user;
 
+import com.sakan.user.response.UserData;
 import com.sakan.validation.PasswordValidator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -44,5 +45,18 @@ public class UserService {
         userRepository.save(user);
 
         return "Password Changed Successfully";
+    }
+
+    public UserData getUserData(Principal principal) {
+        var user = (User) ((UsernamePasswordAuthenticationToken) principal).getPrincipal();
+
+        return UserData
+                .builder()
+                .firstName(user.getFirstName())
+                .lastName(user.getLastName())
+                .email(user.getEmail())
+                .phoneNumber(user.getPhoneNumber())
+                .role(user.getRole())
+                .build();
     }
 }

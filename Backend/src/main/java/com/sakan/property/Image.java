@@ -18,7 +18,7 @@ public class Image {
     private Integer id;
 
     @ManyToOne
-    @JoinColumn(name = "propertyId")
+    @JoinColumn(name = "property_id")
     private Property property;
 
     private String imageUrl;

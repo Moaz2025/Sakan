@@ -1,6 +1,7 @@
 package com.sakan.property;
 
 import com.sakan.config.JwtService;
+import com.sakan.user.Role;
 import com.sakan.user.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -52,6 +53,9 @@ public class ContactUsFormsController {
         var user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
         if (user == null) {
+            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+        }
+        else if (user.getRole() == Role.USER) {
             return new ResponseEntity<>(HttpStatus.FORBIDDEN);
         }
         Page<Form> forms = contactUsFormsService.getForms(pageNo, pageSize);
