@@ -3,6 +3,7 @@ package com.sakan.property;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sakan.config.JwtService;
+import com.sakan.user.Role;
 import com.sakan.user.User;
 import com.sakan.user.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -248,8 +249,10 @@ public class PropertyController {
         else if (propertyService.getPropertyById(propertyId) == null) {
             return new ResponseEntity<>("No property with this id", HttpStatus.NOT_FOUND);
         }
-        else if (!Objects.equals(propertyService.getPropertyById(propertyId).getUser().getEmail(), email)) {
-            return new ResponseEntity<>("This property doesn't belong to this user", HttpStatus.FORBIDDEN);
+        else if (user.getRole() == Role.USER) {
+            if (!Objects.equals(propertyService.getPropertyById(propertyId).getUser().getEmail(), email)) {
+                return new ResponseEntity<>("This property doesn't belong to this user", HttpStatus.FORBIDDEN);
+            }
         }
         Location location = locationService.getLocationByPropertyId(propertyId);
         locationService.deleteLocation(location);
