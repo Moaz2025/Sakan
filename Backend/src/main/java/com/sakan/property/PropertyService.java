@@ -40,4 +40,13 @@ public class PropertyService {
     public Page<Property> getAllPropertiesFilteredByPrice(int minPrice, int maxPrice, Pageable pageable) {
         return propertyRepository.findByPriceBetween(minPrice, maxPrice, pageable);
     }
+
+    public Page<Property> getAllPropertiesFilteredByPropertyType(PropertyType propertyType, Pageable pageable) {
+        return propertyRepository.findByPropertyType(propertyType, pageable);
+    }
+
+    public Page<Property> getAllPropertiesFilteredByCity(String city, Pageable pageable) {
+        return propertyRepository.findByCityStartingWith(city, pageable);
+    }
+
 }

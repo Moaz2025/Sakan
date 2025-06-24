@@ -9,6 +9,8 @@ import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -37,25 +39,20 @@ public class TestDataSeeder implements CommandLineRunner {
         this.faker = new Faker(new java.util.Locale("en-US"));
     }
 
-    public List<MultipartFile> readImagesAsMultipartFiles(String directoryPath) throws IOException {
+    public List<MultipartFile> readImagesAsMultipartFiles(String resourceFolder) throws IOException {
         List<MultipartFile> multipartFiles = new ArrayList<>();
-        File directory = new File(directoryPath);
-        if (directory.exists() && directory.isDirectory()) {
-            File[] files = directory.listFiles((dir, name) -> name.toLowerCase().endsWith(".jpg") || name.toLowerCase().endsWith(".png") || name.toLowerCase().endsWith(".jfif"));
-            if (files != null) {
-                for (File file : files) {
-                    try (FileInputStream input = new FileInputStream(file)) {
-                        MultipartFile multipartFile = new MockMultipartFile(
-                                file.getName(),
-                                file.getName(),
-                                Files.probeContentType(file.toPath()),
-                                input
-                        );
-                        multipartFiles.add(multipartFile);
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
-                    }
-                }
+        PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
+        Resource[] resources = resolver.getResources("classpath:" + resourceFolder + "/*.{jpg,png,jfif}");
+        for (Resource resource : resources) {
+            File file = resource.getFile();
+            try (FileInputStream input = new FileInputStream(file)) {
+                MultipartFile multipartFile = new MockMultipartFile(
+                        file.getName(),
+                        file.getName(),
+                        Files.probeContentType(file.toPath()),
+                        input
+                );
+                multipartFiles.add(multipartFile);
             }
         }
         return multipartFiles;
@@ -71,8 +68,8 @@ public class TestDataSeeder implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
-        int[] ids = {1, 2, 52, 53, 54, 55};
-        IntStream.rangeClosed(1, 10).forEach(i -> {
+        int[] ids = {1, 2, 3, 4, 5};
+        IntStream.rangeClosed(1, 100).forEach(i -> {
             Random random = new Random();
             int randomIndex = random.nextInt(ids.length);
             int randomId = ids[randomIndex];
@@ -106,7 +103,7 @@ public class TestDataSeeder implements CommandLineRunner {
             locationRepository.save(location);
             List<MultipartFile> multipartFiles;
             try {
-                multipartFiles = readImagesAsMultipartFiles("C:\\Users\\Moaz\\Desktop\\Images");
+                multipartFiles = readImagesAsMultipartFiles("images");
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
@@ -135,6 +132,6 @@ public class TestDataSeeder implements CommandLineRunner {
                 imageService.addImage(image);
             }
         });
-        System.out.println("Seeded 10 properties with random data into the database");
+        System.out.println("Seeded 100 properties with random data into the database");
     }
 }

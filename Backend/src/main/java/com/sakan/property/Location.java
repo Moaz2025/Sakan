@@ -18,7 +18,7 @@ public class Location {
     private Integer id;
 
     @OneToOne
-    @JoinColumn(name = "propertyId")
+    @JoinColumn(name = "property_id")
     private Property property;
 
     private String streetAddress;
