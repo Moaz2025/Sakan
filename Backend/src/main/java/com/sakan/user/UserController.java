@@ -9,6 +9,7 @@ import java.security.Principal;
 
 @RestController
 @RequestMapping("/users")
+@CrossOrigin(origins = "http://localhost:3000")
 @RequiredArgsConstructor
 public class UserController {
     private final UserService userService;
