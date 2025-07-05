@@ -69,7 +69,7 @@ public class PredictionController {
 
             int exitCode = process.waitFor();
             if (exitCode == 0) {
-                return ResponseEntity.ok(Map.of("prediction", output.toString().trim()));
+                return ResponseEntity.ok(output.toString().trim());
             } else {
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                         .body("Python script failed:\n" + output);
